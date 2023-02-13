@@ -34,6 +34,7 @@ import (
 	batch "volcano.sh/apis/pkg/apis/batch/v1alpha1"
 	"volcano.sh/apis/pkg/apis/scheduling"
 	"volcano.sh/apis/pkg/apis/scheduling/v1beta1"
+	"volcano.sh/volcano/pkg/scheduler/metrics"
 )
 
 // DisruptionBudget define job min pod available and max pod unvailable value
@@ -320,6 +321,8 @@ type JobInfo struct {
 
 	ScheduleStartTimestamp metav1.Time
 
+	CacheCreationTimestamp metav1.Time
+
 	Preemptable bool
 
 	// RevocableZone support set volcano.sh/revocable-zone annotaion or label for pod/podgroup
@@ -333,14 +336,15 @@ type JobInfo struct {
 // NewJobInfo creates a new jobInfo for set of tasks
 func NewJobInfo(uid JobID, tasks ...*TaskInfo) *JobInfo {
 	job := &JobInfo{
-		UID:              uid,
-		MinAvailable:     0,
-		NodesFitErrors:   make(map[TaskID]*FitErrors),
-		Allocated:        EmptyResource(),
-		TotalRequest:     EmptyResource(),
-		TaskStatusIndex:  map[TaskStatus]tasksMap{},
-		Tasks:            tasksMap{},
-		TaskMinAvailable: map[TaskID]int32{},
+		UID:                    uid,
+		MinAvailable:           0,
+		NodesFitErrors:         make(map[TaskID]*FitErrors),
+		Allocated:              EmptyResource(),
+		TotalRequest:           EmptyResource(),
+		TaskStatusIndex:        map[TaskStatus]tasksMap{},
+		Tasks:                  tasksMap{},
+		TaskMinAvailable:       map[TaskID]int32{},
+		CacheCreationTimestamp: metav1.Time{Time: time.Now()},
 	}
 
 	for _, task := range tasks {
@@ -362,6 +366,8 @@ func (ji *JobInfo) SetPodGroup(pg *PodGroup) {
 	ji.MinAvailable = pg.Spec.MinMember
 	ji.Queue = QueueID(pg.Spec.Queue)
 	ji.CreationTimestamp = pg.GetCreationTimestamp()
+
+	metrics.UpdateE2eJobCreationTimeByJob(ji.Name, string(ji.Queue), ji.Namespace, ji.CacheCreationTimestamp.Time)
 
 	var err error
 	ji.WaitingTime, err = ji.extractWaitingTime(pg, v1beta1.JobWaitingTime)
