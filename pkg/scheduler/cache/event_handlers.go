@@ -530,7 +530,7 @@ func (sc *SchedulerCache) setPodGroup(ss *schedulingapi.PodGroup) error {
 		sc.Jobs[job] = schedulingapi.NewJobInfo(job)
 	}
 
-	metrics.UpdateE2eJobCreationTimeByJob(sc.Jobs[job].Name, string(sc.Jobs[job].Queue), sc.Jobs[job].Namespace, sc.Jobs[job].CacheCreationTimestamp.Time)
+	metrics.UpdateE2eJobCreationTimeByJob(ss.Name, ss.Spec.Queue, ss.Namespace, sc.Jobs[job].CacheCreationTimestamp.Time)
 	sc.Jobs[job].SetPodGroup(ss)
 
 	// TODO(k82cn): set default queue in admission.
