@@ -18,11 +18,12 @@ package proportion_optimize
 
 import (
 	"reflect"
+
 	"volcano.sh/volcano/pkg/scheduler/plugins/common"
 	scheutil "volcano.sh/volcano/pkg/scheduler/util"
 
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	"volcano.sh/apis/pkg/apis/scheduling"
 	"volcano.sh/volcano/pkg/scheduler/api"

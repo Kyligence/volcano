@@ -17,10 +17,11 @@ limitations under the License.
 package metrics
 
 import (
+	"math"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto" // auto-registry collectors in default registry
-	"k8s.io/klog"
-	"math"
+	"k8s.io/klog/v2"
 	"volcano.sh/apis/pkg/apis/scheduling"
 	"volcano.sh/volcano/pkg/scheduler/api"
 )

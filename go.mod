@@ -131,5 +131,5 @@ replace (
 	k8s.io/sample-apiserver => k8s.io/sample-apiserver v0.25.0
 	k8s.io/sample-cli-plugin => k8s.io/sample-cli-plugin v0.25.0
 	k8s.io/sample-controller => k8s.io/sample-controller v0.25.0
-	volcano.sh/apis v1.6.0-alpha.0.0.20221021034835-d3a04f5cfc7c => github.com/zbbkeepgoing/volcano-apis v1.6.0-alpha.0.0.20221129101014-28c312fdcfbf
+	volcano.sh/apis => github.com/zbbkeepgoing/volcano-apis v1.6.0-alpha.0.0.20230306061838-3c7bcef48935
 )
