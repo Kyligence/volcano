@@ -34,7 +34,6 @@ import (
 	"volcano.sh/apis/pkg/apis/scheduling"
 	"volcano.sh/apis/pkg/apis/scheduling/v1beta1"
 	volumescheduling "volcano.sh/volcano/pkg/scheduler/capabilities/volumebinding"
-	"volcano.sh/volcano/pkg/scheduler/metrics"
 )
 
 // DisruptionBudget define job min pod available and max pod unvailable value
@@ -366,8 +365,6 @@ func (ji *JobInfo) SetPodGroup(pg *PodGroup) {
 	ji.MinAvailable = pg.Spec.MinMember
 	ji.Queue = QueueID(pg.Spec.Queue)
 	ji.CreationTimestamp = pg.GetCreationTimestamp()
-
-	metrics.UpdateE2eJobCreationTimeByJob(ji.Name, string(ji.Queue), ji.Namespace, ji.CacheCreationTimestamp.Time)
 
 	var err error
 	ji.WaitingTime, err = ji.extractWaitingTime(pg, v1beta1.JobWaitingTime)
