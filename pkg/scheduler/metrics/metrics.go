@@ -68,6 +68,25 @@ var (
 		[]string{"job_name", "queue", "job_namespace"},
 	)
 
+	//ScheduleStartTimestamp
+	e2eRealScheduleStartTime = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Subsystem: VolcanoNamespace,
+			Name:      "e2e_real_schedule_start_time",
+			Help:      "e2e real schedule start time",
+		},
+		[]string{"job_name"},
+	)
+
+	e2eJobInfoStartTime = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Subsystem: VolcanoNamespace,
+			Name:      "e2e_job_info_start_time",
+			Help:      "E2E job info start to schedule time",
+		},
+		[]string{"job_name", "queue", "job_namespace"},
+	)
+
 	e2eJobSchedulingStartTime = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Subsystem: VolcanoNamespace,
@@ -173,6 +192,16 @@ func UpdateE2eDuration(duration time.Duration) {
 func UpdateE2eSchedulingDurationByJob(jobName string, queue string, namespace string, duration time.Duration) {
 	e2eJobSchedulingDuration.WithLabelValues(jobName, queue, namespace).Set(DurationInMilliseconds(duration))
 	e2eJobSchedulingLatency.Observe(DurationInMilliseconds(duration))
+}
+
+// UpdateE2eRealScheduleStartTimeByJob set the creation time of job info
+func UpdateE2eRealScheduleStartTimeByJob(jobName string, t time.Time) {
+	e2eRealScheduleStartTime.WithLabelValues(jobName).Set(ConvertToUnix(t))
+}
+
+// UpdateE2eJobCreationTimeByJob set the creation time of job info
+func UpdateE2eJobCreationTimeByJob(jobName string, queue string, namespace string, t time.Time) {
+	e2eJobInfoStartTime.WithLabelValues(jobName, queue, namespace).Set(ConvertToUnix(t))
 }
 
 // UpdateE2eSchedulingStartTimeByJob updates the start time of scheduling
