@@ -40,6 +40,12 @@ type proportionPlugin struct {
 	queueOpts      map[api.QueueID]*queueAttr
 	// Arguments given for the plugin
 	pluginArguments framework.Arguments
+	jobOpts         map[api.JobID]*jobAttr
+}
+
+type jobAttr struct {
+	minResource *api.Resource
+	allocated   *api.Resource
 }
 
 type queueAttr struct {
@@ -68,6 +74,7 @@ func New(arguments framework.Arguments) framework.Plugin {
 		totalGuarantee:  api.EmptyResource(),
 		queueOpts:       map[api.QueueID]*queueAttr{},
 		pluginArguments: arguments,
+		jobOpts:         map[api.JobID]*jobAttr{},
 	}
 }
 
@@ -91,6 +98,17 @@ func (pp *proportionPlugin) OnSessionOpen(ssn *framework.Session) {
 	// Build attributes for Queues.
 	for _, job := range ssn.Jobs {
 		klog.V(4).Infof("Considering Job <%s/%s>.", job.Namespace, job.Name)
+		if _, found := pp.jobOpts[job.UID]; !found {
+			jobAttr := &jobAttr{
+				minResource: api.EmptyResource(),
+				allocated:   api.EmptyResource(),
+			}
+			if job.PodGroup.Spec.MinResources == nil {
+				jobAttr.minResource.Add(job.GetMinResources())
+			}
+			jobAttr.allocated.Add(util.GetAllocatedResource(job))
+			pp.jobOpts[job.UID] = jobAttr
+		}
 		if _, found := pp.queueOpts[job.Queue]; !found {
 			queue := ssn.Queues[job.Queue]
 			attr := &queueAttr{
@@ -271,10 +289,15 @@ func (pp *proportionPlugin) OnSessionOpen(ssn *framework.Session) {
 	ssn.AddReclaimableFn(pp.Name(), func(reclaimer *api.TaskInfo, reclaimees []*api.TaskInfo) ([]*api.TaskInfo, int) {
 		var victims []*api.TaskInfo
 		allocations := map[api.QueueID]*api.Resource{}
-
 		for _, reclaimee := range reclaimees {
 			job := ssn.Jobs[reclaimee.Job]
 			attr := pp.queueOpts[job.Queue]
+			jobAttr := pp.jobOpts[reclaimee.Job]
+			if jobAttr.allocated.LessEqual(jobAttr.minResource, api.Zero) {
+				klog.V(4).Infof("Failed to reclaim task <%v/%v> because allocated of job <%v> less equal to min resource",
+					reclaimee.Namespace, reclaimee.Name, job.Name)
+				continue
+			}
 
 			if _, found := allocations[job.Queue]; !found {
 				allocations[job.Queue] = attr.allocated.Clone()
@@ -288,6 +311,7 @@ func (pp *proportionPlugin) OnSessionOpen(ssn *framework.Session) {
 
 			if !allocated.LessEqual(attr.deserved, api.Zero) {
 				allocated.Sub(reclaimee.Resreq)
+				jobAttr.allocated.Sub(reclaimee.Resreq)
 				victims = append(victims, reclaimee)
 			}
 		}
