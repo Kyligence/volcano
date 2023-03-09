@@ -19,6 +19,8 @@ package gang
 import (
 	"fmt"
 
+	"volcano.sh/volcano/pkg/scheduler/plugins/util/gangextender"
+
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
@@ -85,6 +87,10 @@ func (gp *gangPlugin) OnSessionOpen(ssn *framework.Session) {
 		jobOccupiedMap := map[api.JobID]int32{}
 
 		for _, preemptee := range preemptees {
+			// can not reclaim or preempt driver of spark. if reclaim or preempt driver, spark job will be fail
+			if gangextender.GangRejectExtender(preemptee) {
+				continue
+			}
 			job := ssn.Jobs[preemptee.Job]
 			if _, found := jobOccupiedMap[job.UID]; !found {
 				jobOccupiedMap[job.UID] = job.ReadyTaskNum()
